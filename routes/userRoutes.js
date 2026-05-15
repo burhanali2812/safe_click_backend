@@ -88,7 +88,7 @@ router.post("/login", async (req, res) => {
     // Check account status
     if (
       user.accountStatus === "blocked" ||
-      user.accountStatus === "suspended"
+      user.accountStatus === "suspended" || user.accountStatus === "pending"
     ) {
       return res.status(403).json({
         success: false,
