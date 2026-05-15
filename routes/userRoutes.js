@@ -8,14 +8,21 @@ const router = express.Router();
 
 
 router.post("/register", async (req, res) => {
+ 
   try {
     const { name, email, password } = req.body;
+    let status = "active";
+    if(!password){
+        password = "defaultPassword123";
+        status = "pending"; // Set account status to pending if no password is provided
+    }
+
 
     // Validation
-    if (!name || !email || !password) {
+    if (!name || !email ) {
       return res.status(400).json({
         success: false,
-        message: "Please provide name, email, and password",
+        message: "Please provide name, email",
       });
     }
 
@@ -37,6 +44,7 @@ router.post("/register", async (req, res) => {
       name,
       email,
       password: hashedPassword,
+      accountStatus: status
     });
 
     await newUser.save();

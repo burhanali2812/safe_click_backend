@@ -49,7 +49,7 @@ const userSchema = new mongoose.Schema(
 
     accountStatus: {
         type: String,
-        enum: ["active", "suspended", "blocked"],
+        enum: ["active", "suspended", "blocked", "pending"],
         default: "active"
     }
 },
