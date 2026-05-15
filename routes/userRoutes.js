@@ -84,11 +84,17 @@ router.post("/login", async (req, res) => {
         message: "Invalid email or password",
       });
     }
+    if(user.accountStatus === "pending"){
+      return res.status(403).json({
+        success: false,
+        message: "Account does not exists!",
+      });
+    }
 
     // Check account status
     if (
       user.accountStatus === "blocked" ||
-      user.accountStatus === "suspended" || user.accountStatus === "pending"
+      user.accountStatus === "suspended"
     ) {
       return res.status(403).json({
         success: false,
