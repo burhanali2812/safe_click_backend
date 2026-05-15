@@ -6,20 +6,18 @@ const authMiddleWare = require("../MiddleWare/authMiddleware");
 
 const router = express.Router();
 
-
 router.post("/register", async (req, res) => {
- 
   try {
-    const { name, email, password } = req.body;
+    const { name, email } = req.body;
+    let password = req.body.password;
     let status = "active";
-    if(!password){
-        password = "defaultPassword123";
-        status = "pending"; // Set account status to pending if no password is provided
+    if (!password) {
+      password = "defaultPassword123";
+      status = "pending"; // Set account status to pending if no password is provided
     }
 
-
     // Validation
-    if (!name || !email ) {
+    if (!name || !email) {
       return res.status(400).json({
         success: false,
         message: "Please provide name, email",
@@ -44,11 +42,10 @@ router.post("/register", async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      accountStatus: status
+      accountStatus: status,
     });
 
     await newUser.save();
-
 
     res.status(201).json({
       success: true,
@@ -147,8 +144,6 @@ router.post("/login", async (req, res) => {
     });
   }
 });
-
-
 
 // Get current user profile
 router.get("/profile", authMiddleWare, async (req, res) => {
