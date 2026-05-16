@@ -44,7 +44,7 @@ router.post("/send-otp", authMiddleWare, async (req, res) => {
   }
   console.log("User email from token:", email, "Role:", role);
   const finalModel = role === "admin" ? "Admin" : "User";
-  const existingUser = await User.findOne({ email });
+  const existingUser = await finalModel.findOne({ email });
 
   if (!existingUser) {
     return res.status(404).send("Email not registered");
