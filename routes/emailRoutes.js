@@ -42,6 +42,7 @@ router.post("/send-otp", authMiddleWare, async (req, res) => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).send("Invalid email format");
   }
+  console.log("User email from token:", email, "Role:", role);
   const finalModel = role === "admin" ? "Admin" : "User";
   const existingUser = await User.findOne({ email });
 
