@@ -29,6 +29,7 @@ function generateOTP() {
 
 router.post("/send-otp", authMiddleWare, async (req, res) => {
    const email = req.user?.email;
+   const role = req.user?.role;
 
   if (!email) {
     return res.status(400).send("Missing email");
@@ -41,6 +42,7 @@ router.post("/send-otp", authMiddleWare, async (req, res) => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).send("Invalid email format");
   }
+  const finalModel = role === "admin" ? "Admin" : "User";
   const existingUser = await User.findOne({ email });
 
   if (!existingUser) {
