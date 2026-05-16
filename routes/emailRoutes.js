@@ -28,12 +28,12 @@ function generateOTP() {
 }
 
 router.post("/send-otp", authMiddleWare, async (req, res) => {
-  const email = req.user.email;
-    const name = req.user.name ;
+   const email = req.user?.email;
 
-  if (!email || !name) {
-    return res.status(400).send("Missing email or name");
+  if (!email) {
+    return res.status(400).send("Missing email");
   }
+
   const existingOTP = otpMap.get(email);
   if (existingOTP) {
     return res.status(429).send("OTP already sent. Please wait before requesting again.");
@@ -42,9 +42,16 @@ router.post("/send-otp", authMiddleWare, async (req, res) => {
     return res.status(400).send("Invalid email format");
   }
   const existingUser = await User.findOne({ email });
+
   if (!existingUser) {
     return res.status(404).send("Email not registered");
   }
+
+  const name = existingUser.name || "User";
+
+
+
+ 
 
   const otp = generateOTP();
   otpMap.set(email, otp);
