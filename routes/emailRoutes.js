@@ -33,22 +33,22 @@ router.post("/send-otp", authMiddleWare, async (req, res) => {
    const role = req.user?.role;
 
   if (!email) {
-    return res.status(400).send("Missing email");
+    return res.status(400).json({ success: false, message: "Missing email" });
   }
 
   const existingOTP = otpMap.get(email);
   if (existingOTP) {
-    return res.status(429).send("OTP already sent. Please wait before requesting again.");
+    return res.status(429).json({ success: false, message: "OTP already sent. Please wait before requesting again." });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return res.status(400).send("Invalid email format");
+    return res.status(400).json({ success: false, message: "Invalid email format" });
   }
   console.log("User email from token:", email, "Role:", role);
   const finalModel = role === "admin" ? Admin :User;
   const existingUser = await finalModel.findOne({ email });
 
   if (!existingUser) {
-    return res.status(404).send("Email not registered");
+    return res.status(404).json({ success: false, message: "Email not registered" });
   }
 
   const name = existingUser.name || "User";
@@ -114,10 +114,10 @@ const mailOptions = {
 };
   try {
     await transporter.sendMail(mailOptions);
-    res.status(200).send("OTP sent");
+    res.status(200).json({ success: true, message: "OTP sent to email" });
   } catch (error) {
     console.error("Email error:", error);
-    res.status(500).send("Failed to send OTP");
+    res.status(500).json({ success: false, message: "Failed to send OTP" });
   }
 });
 
