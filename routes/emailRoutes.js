@@ -3,6 +3,7 @@ const nodemailer = require("nodemailer");
 const otpMap = new Map();
 const Template = require("../models/emailTemplate");
 const authMiddleWare = require("../MiddleWare/authMiddleware");
+const User = require("../models/user");
 
 const router = express.Router();
 
