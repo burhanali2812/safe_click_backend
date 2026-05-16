@@ -4,6 +4,7 @@ const otpMap = new Map();
 const Template = require("../models/emailTemplate");
 const authMiddleWare = require("../MiddleWare/authMiddleware");
 const User = require("../models/user");
+const Admin = require("../models/admin");
 
 const router = express.Router();
 
@@ -43,7 +44,7 @@ router.post("/send-otp", authMiddleWare, async (req, res) => {
     return res.status(400).send("Invalid email format");
   }
   console.log("User email from token:", email, "Role:", role);
-  const finalModel = role === "admin" ? "Admin" : "User";
+  const finalModel = role === "admin" ? Admin :User;
   const existingUser = await finalModel.findOne({ email });
 
   if (!existingUser) {
