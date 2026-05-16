@@ -16,12 +16,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
   },
 });
-console.log("SMTP Config:", {
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  user: process.env.SMTP_USER,
-  pass: process.env.SMTP_PASS ? "******" : "Not Set",
-});
+
 
 function generateOTP() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -33,6 +28,12 @@ function generateOTP() {
 }
 
 router.post("/send-otp", async (req, res) => {
+    console.log("SMTP Config:", {
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  user: process.env.SMTP_USER,
+  pass: process.env.SMTP_PASS ? "******" : "Not Set",
+});
   const { email, name } = req.body;
 
   if (!email || !name) {
