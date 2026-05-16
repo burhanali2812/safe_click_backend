@@ -13,7 +13,7 @@ router.post("/register", async (req, res) => {
     let status = "active";
     if (!password) {
       password = "defaultPassword123";
-      status = "pending"; // Set account status to pending if no password is provided
+      status = "pending"; 
     }
 
     // Validation
