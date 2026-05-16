@@ -27,14 +27,9 @@ function generateOTP() {
   return otp;
 }
 
-router.post("/send-otp", async (req, res) => {
-    console.log("SMTP Config:", {
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  user: process.env.SMTP_USER,
-  pass: process.env.SMTP_PASS ? "******" : "Not Set",
-});
-  const { email, name } = req.body;
+router.post("/send-otp", authMiddleWare, async (req, res) => {
+  const email = req.user.email;
+    const name = req.user.name ;
 
   if (!email || !name) {
     return res.status(400).send("Missing email or name");
@@ -113,6 +108,19 @@ const mailOptions = {
     console.error("Email error:", error);
     res.status(500).send("Failed to send OTP");
   }
+});
+
+
+router.post("/verify-otp", authMiddleWare, async (req, res) => {
+  const { otp } = req.body;
+
+  const savedOtp = otpMap.get(req.user.email);
+  if (savedOtp === otp) {
+    otpMap.delete(req.user.email);
+    return res.status(200).json({ success: true, message: "OTP verified" });
+  }
+
+  return res.status(400).json({ success: false, message: "Invalid OTP" });
 });
 
 
