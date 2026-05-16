@@ -10,7 +10,7 @@ app.use(express.json());
 // Import routes
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-const emailTemplateRoutes = require("./routes/emailTemplateRoutes");
+const emailTemplateRoutes = require("./routes/emailRoutes");
 
 const PORT = process.env.PORT || 5000;
 app.get("/", (req, res) => {
