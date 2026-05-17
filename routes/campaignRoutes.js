@@ -113,6 +113,54 @@ router.get("/campaigns/:id", authMiddleWare, async (req, res) => {
   }
 });
 
+router.put("/campaigns/:id", authMiddleWare, async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+    const { name, description, emailTemplateId, targetedUsers } = req.body;
+    if (
+      !name ||
+      !emailTemplateId ||
+      !Array.isArray(targetedUsers) ||
+      targetedUsers.length === 0
+    ) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Name, email template, and targeted users are required",
+        });
+    }
+    const campaign = await Campaign.findByIdAndUpdate(
+      req.params.id,
+      {
+        title: name,
+        description,
+        emailTemplateId,
+        targetUsers: targetedUsers,
+      },
+      { new: true },
+    ).populate("emailTemplateId", "templateName subject body");
+
+    if (!campaign) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Campaign not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Campaign updated successfully",
+      data: campaign,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
+  }
+});
+
 router.post("/run-campaign/:id", authMiddleWare, async (req, res) => {
   try {
     if (req.user.role !== "admin") {
