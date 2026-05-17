@@ -11,6 +11,7 @@ app.use(express.json());
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const emailTemplateRoutes = require("./routes/emailRoutes");
+const campaignRoutes = require("./routes/campaignRoutes");
 
 const PORT = process.env.PORT || 5000;
 app.get("/", (req, res) => {
@@ -24,6 +25,7 @@ app.use((req, res, next) => {
 app.use("/api/users", userRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/email-templates", emailTemplateRoutes);
+app.use("/api/campaigns", campaignRoutes);
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
