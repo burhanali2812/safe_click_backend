@@ -113,6 +113,64 @@ router.get("/campaigns/:id", authMiddleWare, async (req, res) => {
   }
 });
 
+router.post("/run-campaign/:id", authMiddleWare, async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+    const campaign = await Campaign.findById(req.params.id).populate(
+      "emailTemplateId",
+      "templateName subject body"
+    );
+    if (!campaign) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Campaign not found" });
+    }
+    // Send emails to all targeted users
+    const targetedUsers = Array.isArray(campaign.targetUsers)
+      ? campaign.targetUsers
+      : Array.isArray(campaign.targetedUsers)
+        ? campaign.targetedUsers
+        : [];
+
+    let emailsSent = 0;
+    const template = campaign.emailTemplateId;
+
+    for (const userId of targetedUsers) {
+      try {
+        const user = await User.findById(userId);
+        if (user && template) {
+          const html = emailTemplate(user.email, campaign._id);
+          await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: user.email,
+            subject: template.subject,
+            html: html,
+          });
+          emailsSent++;
+        }
+      } catch (emailError) {
+        console.error(`Failed to send email to user ${userId}:`, emailError);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Campaign executed successfully. Emails sent to ${emailsSent} user(s)`,
+      data: {
+        campaignId: campaign._id,
+        emailsSent,
+        totalTargeted: targetedUsers.length,
+      },
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
+  }
+});
+
 router.delete("/campaigns/:id", authMiddleWare, async (req, res) => {
   try {
     if (req.user.role !== "admin") {
