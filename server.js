@@ -12,6 +12,7 @@ const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const emailTemplateRoutes = require("./routes/emailRoutes");
 const campaignRoutes = require("./routes/campaignRoutes");
+const simulationRoutes = require("./routes/simulationRoutes");
 
 const PORT = process.env.PORT || 5000;
 app.get("/", (req, res) => {
@@ -26,6 +27,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/email-templates", emailTemplateRoutes);
 app.use("/api/campaigns", campaignRoutes);
+app.use("/api/simulations", simulationRoutes);
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);

@@ -42,14 +42,7 @@ const interactionSchema = new mongoose.Schema({
   operatingSystem: { 
     type: String 
   },
-  location: {
-    city: String,
-    country: String,
-    coordinates: {
-      type: [Number], 
-      index: '2dsphere'
-    }
-  },
+
 
 
 }, { 
