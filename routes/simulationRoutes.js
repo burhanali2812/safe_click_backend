@@ -5,7 +5,7 @@ const SimulationResult = require("../models/simulationResult");
 
 const router = express.Router();
 
-router.post("/verify-account", async (req, res) => {
+router.get("/verify-account", async (req, res) => {
     const { email, campaignId } = req.query;
 
     if (!email || !campaignId) {
