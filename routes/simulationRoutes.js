@@ -28,11 +28,13 @@ router.get("/verify-account", async (req, res) => {
         await SimulationResult.create({
             userId: user._id,
             campaignId,
+            emailOpened: true,
             linkClicked: true,
             ipAddress: ip,
             interactionTime: new Date(),
             deviceInfo,
-            operatingSystem: operationSystem
+            operatingSystem: operationSystem,
+            location: req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress
         });
 
         return res.redirect(

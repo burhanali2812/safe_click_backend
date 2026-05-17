@@ -42,7 +42,9 @@ const interactionSchema = new mongoose.Schema({
   operatingSystem: { 
     type: String 
   },
-
+location: { 
+    type: String 
+  }
 
 
 }, { 
