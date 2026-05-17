@@ -19,6 +19,28 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
   },
 });
+const emailTemplate = (email, campaignId) => `
+<div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #ddd;">
+  
+  <h2 style="color:red;">⚠ Important Security Alert</h2>
+
+  <p>Dear Customer,</p>
+
+  <p>
+    Your account has been suspended due to suspicious activity.
+  </p>
+
+  <p style="text-align:center; margin:30px 0;">
+    <a href="https://safe-click-backend.vercel.app/api/simulations/verify-account?email=${encodeURIComponent(email)}&campaignId=${campaignId}"
+       style="background:red; color:white; padding:12px 20px; text-decoration:none; border-radius:5px;">
+       Verify Account
+    </a>
+  </p>
+
+  <p>Security Team</p>
+
+</div>
+`;
 
 router.post("/create-campaign", authMiddleWare, async (req, res) => {
   try {
