@@ -38,7 +38,7 @@ router.get("/verify-account", async (req, res) => {
         });
 
         return res.redirect(
-            "https://safe-clicks1.vercel.app/awareness-simulations"
+            "https://safe-clicks1.vercel.app//phishing-trap"
         );
 
     } catch (error) {

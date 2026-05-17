@@ -31,8 +31,8 @@ const emailTemplate = (email, campaignId) => `
   </p>
 
   <p style="text-align:center; margin:30px 0;">
-    <a href="https://safe-click-backend.vercel.app/api/simulations/verify-account?email=${encodeURIComponent(email)}&campaignId=${campaignId}"
-       style="background:red; color:white; padding:12px 20px; text-decoration:none; border-radius:5px;">
+    <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/phishing-trap?campaignId=${campaignId}&email=${encodeURIComponent(email)}"
+       style="background:red; color:white; padding:12px 20px; text-decoration:none; border-radius:5px; display:inline-block;">
        Verify Account
     </a>
   </p>
