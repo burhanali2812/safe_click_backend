@@ -7,7 +7,7 @@ const Admin = require("../models/admin");
 const Template = require("../models/emailTemplate");
 const Campaign = require("../models/compaign");
 const authMiddleWare = require("../MiddleWare/authMiddleware");
-
+const renderTemplate = require("../Utils/renderTemplate");
 const router = express.Router();
 
 const transporter = nodemailer.createTransport({
@@ -19,28 +19,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
   },
 });
-const emailTemplate = (email, campaignId) => `
-<div style="font-family: Arial, sans-serif; max-width:600px; margin:auto; padding:20px; border:1px solid #ddd;">
-  
-  <h2 style="color:red;">⚠ Important Security Alert</h2>
 
-  <p>Dear Customer,</p>
-
-  <p>
-    Your account has been suspended due to suspicious activity.
-  </p>
-
-  <p style="text-align:center; margin:30px 0;">
-    <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/phishing-trap?campaignId=${campaignId}&email=${encodeURIComponent(email)}"
-       style="background:red; color:white; padding:12px 20px; text-decoration:none; border-radius:5px; display:inline-block;">
-       Verify Account
-    </a>
-  </p>
-
-  <p>Security Team</p>
-
-</div>
-`;
 
 router.post("/create-campaign", authMiddleWare, async (req, res) => {
   try {
@@ -70,18 +49,24 @@ router.post("/create-campaign", authMiddleWare, async (req, res) => {
     await newCampaign.save();
     // send emails to targeted users using the email template (this can be done asynchronously in a real application)
     const template = await Template.findById(emailTemplateId);
-    for (const userId of targetedUsers) {
-      const user = await User.findById(userId);
-      if (user) {
-        const html = emailTemplate(user.email, newCampaign._id);
-        await transporter.sendMail({
-          from: process.env.SMTP_USER,
-          to: user.email,
-          subject: template.subject,
-          html: html,
-        });
-      }
-    }
+   
+const users = await User.find({ _id: { $in: targetedUsers } });
+
+for (const user of users) {
+  const safeEmail = encodeURIComponent(user.email);
+
+    const html = renderTemplate(template.body, {
+        email: safeEmail,
+        campaignId: newCampaign._id.toString()
+    });
+
+    await transporter.sendMail({
+        from: process.env.SMTP_USER,
+        to: user.email,
+        subject: template.subject,
+        html
+    });
+}
     res
       .status(201)
       .json({
