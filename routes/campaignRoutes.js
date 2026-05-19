@@ -53,12 +53,14 @@ router.post("/create-campaign", authMiddleWare, async (req, res) => {
 const users = await User.find({ _id: { $in: targetedUsers } });
 
 for (const user of users) {
-  const safeEmail = encodeURIComponent(user.email);
 
-    const html = renderTemplate(template.body, {
-        email: safeEmail,
-        campaignId: newCampaign._id.toString()
-    });
+  const link = `https://safe-click-backend.vercel.app/api/simulations/verify-account?email=${encodeURIComponent(user.email)}&campaignId=${newCampaign._id}`;
+
+   const html = renderTemplate(template.body, {
+      email: user.email,
+      campaignId: newCampaign._id.toString(),
+      link
+  });
 
     await transporter.sendMail({
         from: process.env.SMTP_USER,
