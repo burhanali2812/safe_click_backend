@@ -9,14 +9,11 @@ router.get("/verify-account", async (req, res) => {
   try {
     const { email, campaignId } = req.query;
 
-   
-
     if (!email || !campaignId) {
       return res.status(400).send("Missing required fields");
     }
 
     const user = await User.findOne({ email });
-
     if (!user) {
       return res.status(404).send("User not found");
     }
@@ -24,71 +21,51 @@ router.get("/verify-account", async (req, res) => {
     const ipAddress =
       req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
       req.ip ||
-      req.socket.remoteAddress ||
       "Unknown";
 
-    const deviceInfo =
-      req.headers["user-agent"] || "Unknown Device";
+    const deviceInfo = req.headers["user-agent"] || "Unknown Device";
+    const operatingSystem = req.headers["sec-ch-ua-platform"] || "Unknown OS";
 
-    const operatingSystem =
-      req.headers["sec-ch-ua-platform"] || "Unknown OS";
+    // 🚀 respond immediately
+    res.redirect("https://safe-clicks1.vercel.app/phishing-trap");
 
- 
-    let location = "Unknown";
+    // 🔥 run tracking AFTER response
+    setImmediate(async () => {
+      try {
+        let location = "Unknown";
 
-    try {
-      const response = await axios.get(
-        `https://api.ipinfo.io/lite/${ipAddress}?token=${process.env.IPINFO_TOKEN}`
-      );
+        try {
+          const response = await axios.get(
+            `https://api.ipinfo.io/lite/${ipAddress}?token=${process.env.IPINFO_TOKEN}`,
+            { timeout: 3000 }
+          );
 
-      const data = response.data;
+          const data = response.data;
 
-      location = `${data.city || "Unknown City"}, ${
-        data.country || "Unknown Country"
-      }`;
-    } catch (ipError) {
-      console.error(
-        "IPInfo lookup failed:",
-        ipError.message
-      );
-    }
+          location = `${data.city || "Unknown"}, ${data.country || "Unknown"}`;
+        } catch (err) {
+          console.log("IP lookup failed:", err.message);
+        }
 
+        await SimulationResult.create({
+          userId: user._id,
+          campaignId,
+          emailOpened: true,
+          linkClicked: true,
+          ipAddress,
+          deviceInfo,
+          operatingSystem,
+          location,
+          interactionTime: new Date(),
+        });
 
-    const existingResult =
-      await SimulationResult.findOne({
-        userId: user._id,
-        campaignId,
-      });
+      } catch (e) {
+        console.error("Tracking error:", e.message);
+      }
+    });
 
-    if (!existingResult) {
-   
-      await SimulationResult.create({
-        userId: user._id,
-
-        campaignId,
-
-        emailOpened: true,
-
-        linkClicked: true,
-
-        ipAddress,
-
-        interactionTime: new Date(),
-
-        deviceInfo,
-
-        operatingSystem,
-
-        location,
-      });
-    }
-
-    return res.redirect(
-      "https://safe-clicks1.vercel.app/phishing-trap"
-    );
   } catch (error) {
     console.error(error);
-
     return res.status(500).send("Server error");
   }
 });
