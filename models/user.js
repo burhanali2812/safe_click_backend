@@ -1,70 +1,80 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
-{
+  {
     name: {
-        type: String,
-        required: true,
-        trim: true
+      type: String,
+      required: true,
+      trim: true,
     },
 
     email: {
-        type: String,
-        required: true,
-        unique: true,
-        lowercase: true,
-        trim: true
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
     },
 
     password: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
+    },
+
+    otpCode: {
+      type: String,
+      default: null,
+    },
+
+    otpExpiresAt: {
+      type: Date,
+      default: null,
     },
 
     role: {
-        type: String,
-        default: "user"
+      type: String,
+      default: "user",
     },
 
     securityScore: {
-        type: Number,
-        default: 100
+      type: Number,
+      default: 100,
     },
     totalLinksClicked: {
-        type: Number,
-        default: 0
+      type: Number,
+      default: 0,
     },
 
     totalEmailsOpened: {
-        type: Number,
-        default: 0
+      type: Number,
+      default: 0,
     },
 
     riskLevel: {
-        type: String,
-        enum: ["low", "medium", "high"],
-        default: "low"
+      type: String,
+      enum: ["low", "medium", "high"],
+      default: "low",
     },
 
     lastLogin: {
-        type: Date,
-        default: null
+      type: Date,
+      default: null,
     },
 
     failedLoginAttempts: {
-        type: Number,
-        default: 0
+      type: Number,
+      default: 0,
     },
 
     accountStatus: {
-        type: String,
-        enum: ["active", "suspended", "blocked", "pending"],
-        default: "active"
-    }
-},
-{
-    timestamps: true
-}
+      type: String,
+      enum: ["active", "suspended", "blocked", "pending"],
+      default: "active",
+    },
+  },
+  {
+    timestamps: true,
+  },
 );
 
 module.exports = mongoose.model("User", userSchema);

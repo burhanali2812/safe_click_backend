@@ -1,6 +1,5 @@
 const express = require("express");
 const nodemailer = require("nodemailer");
-const otpMap = new Map();
 const Template = require("../models/emailTemplate");
 const authMiddleWare = require("../MiddleWare/authMiddleware");
 const User = require("../models/user");
@@ -18,7 +17,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-
 function generateOTP() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let otp = "";
@@ -29,46 +27,43 @@ function generateOTP() {
 }
 
 router.post("/send-otp", authMiddleWare, async (req, res) => {
-   const email = req.user?.email;
-   const role = req.user?.role;
-   console.log("emailTest: ", email)
-    console.log("roleTest: ", role)
+  const email = req.user?.email?.toLowerCase();
+  const role = req.user?.role;
+  console.log("emailTest: ", email);
+  console.log("roleTest: ", role);
 
   if (!email) {
     return res.status(400).json({ success: false, message: "Missing email" });
   }
 
-  const existingOTP = otpMap.get(email);
-  if (existingOTP) {
-    return res.status(429).json({ success: false, message: "OTP already sent. Please wait before requesting again." });
-  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return res.status(400).json({ success: false, message: "Invalid email format" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid email format" });
   }
   console.log("User email from token:", email, "Role:", role);
-  const finalModel = role === "admin" ? Admin :User;
+  const finalModel = role === "admin" ? Admin : User;
   const existingUser = await finalModel.findOne({ email });
 
   if (!existingUser) {
-    return res.status(404).json({ success: false, message: "Email not registered" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Email not registered" });
   }
 
   const name = existingUser.name || "User";
 
-
-
- 
-
   const otp = generateOTP();
-  console.log("OTP", otp)
-  otpMap.set(email, otp);
-  setTimeout(() => otpMap.delete(email), 60000);
+  console.log("OTP", otp);
+  existingUser.otpCode = otp;
+  existingUser.otpExpiresAt = new Date(Date.now() + 60000);
+  await existingUser.save();
 
-const mailOptions = {
-  from: `"Safe Click Security" <${process.env.SMTP_USER}>`,
-  to: email,
-  subject: "OTP Verification for Safe Click",
-  html: `
+  const mailOptions = {
+    from: `"Safe Click Security" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: "OTP Verification for Safe Click",
+    html: `
     <div style="font-family: system-ui, sans-serif, Arial; font-size: 16px; color: #333; max-width: 600px; margin: auto; padding: 24px; background-color: #f9f9f9; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
 
       <div style="text-align: center; margin-bottom: 24px;">
@@ -114,7 +109,7 @@ const mailOptions = {
       </p>
     </div>
   `,
-};
+  };
   try {
     await transporter.sendMail(mailOptions);
     res.status(200).json({ success: true, message: "OTP sent to email" });
@@ -124,39 +119,59 @@ const mailOptions = {
   }
 });
 
-
 router.post("/verify-otp", authMiddleWare, async (req, res) => {
-try {
-  const email = req.user?.email;
-  const { otp } = req.body;
-  if (!email) {
-    return res.status(400).json({ success: false, message: "Missing email" });
+  try {
+    const email = req.user?.email?.toLowerCase();
+    const role = req.user?.role;
+    const { otp } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Missing email" });
+    }
+    if (!otp) {
+      return res.status(400).json({ success: false, message: "Missing OTP" });
+    }
+    const finalModel = role === "admin" ? Admin : User;
+    const userRecord = await finalModel.findOne({ email });
+
+    if (!userRecord || !userRecord.otpCode || !userRecord.otpExpiresAt) {
+      return res
+        .status(400)
+        .json({ success: false, message: "OTP expired or not found" });
+    }
+
+    if (userRecord.otpExpiresAt.getTime() < Date.now()) {
+      userRecord.otpCode = null;
+      userRecord.otpExpiresAt = null;
+      await userRecord.save();
+      return res
+        .status(400)
+        .json({ success: false, message: "OTP expired or not found" });
+    }
+
+    if (userRecord.otpCode !== otp) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    userRecord.otpCode = null;
+    userRecord.otpExpiresAt = null;
+    await userRecord.save();
+    res
+      .status(200)
+      .json({ success: true, message: "OTP verified successfully" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: error.message || "Failed to verify OTP",
+      });
   }
-  if (!otp) {
-    return res.status(400).json({ success: false, message: "Missing OTP" });
-  }
-  const storedOTP = otpMap.get(email);
-  if (!storedOTP) {
-    return res.status(400).json({ success: false, message: "OTP expired or not found" });
-  }
-  if (storedOTP !== otp) {
-    return res.status(400).json({ success: false, message: "Invalid OTP" });
-  }
-  otpMap.delete(email);
-  res.status(200).json({ success: true, message: "OTP verified successfully" });
-  
-  
-} catch (error) {
-  res.status(500).json({ success: false, message: error.message || "Failed to verify OTP" });
-}
 });
 
-
-
 router.post("/create", authMiddleWare, async (req, res) => {
-    if (req.user.role !== "admin") {
-        return res.status(403).json({ success: false, message: "Access denied" });
-    }
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
+  }
   try {
     const { templateName, subject, body } = req.body;
 
@@ -197,9 +212,9 @@ router.post("/create", authMiddleWare, async (req, res) => {
 
 // GET ALL TEMPLATES
 router.get("/getAllTemplates", authMiddleWare, async (req, res) => {
-    if (req.user.role !== "admin") {
-        return res.status(403).json({ success: false, message: "Access denied" });
-    }
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
+  }
 
   try {
     const templates = await Template.find().sort({ createdAt: -1 });
@@ -219,9 +234,9 @@ router.get("/getAllTemplates", authMiddleWare, async (req, res) => {
 
 // GET SINGLE TEMPLATE
 router.get("/getTemplate/:id", authMiddleWare, async (req, res) => {
-    if (req.user.role !== "admin") {
-        return res.status(403).json({ success: false, message: "Access denied" });
-    }
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
+  }
   try {
     const template = await Template.findById(req.params.id);
 
@@ -246,9 +261,9 @@ router.get("/getTemplate/:id", authMiddleWare, async (req, res) => {
 
 // UPDATE TEMPLATE
 router.put("/updateTemplate/:id", authMiddleWare, async (req, res) => {
-    if (req.user.role !== "admin") {
-        return res.status(403).json({ success: false, message: "Access denied" });
-    }
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
+  }
   try {
     const { templateName, subject, body, isActive } = req.body;
 
@@ -263,7 +278,7 @@ router.put("/updateTemplate/:id", authMiddleWare, async (req, res) => {
       {
         new: true,
         runValidators: true,
-      }
+      },
     );
 
     if (!updatedTemplate) {
@@ -288,9 +303,9 @@ router.put("/updateTemplate/:id", authMiddleWare, async (req, res) => {
 
 // DELETE TEMPLATE
 router.delete("/deleteTemplate/:id", authMiddleWare, async (req, res) => {
-    if (req.user.role !== "admin") {
-        return res.status(403).json({ success: false, message: "Access denied" });
-    }
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
+  }
   try {
     const deletedTemplate = await Template.findByIdAndDelete(req.params.id);
 
