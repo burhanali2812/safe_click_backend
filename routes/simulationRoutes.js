@@ -33,10 +33,26 @@ router.get("/verify-account", async (req, res) => {
     });
     if (existingResult) {
       existingResult.linkClicked = true;
-      existingResult.clickedAt = new Date();
-      existingResult.ipAddress = ipAddress;
-      existingResult.deviceInfo = deviceInfo;
-      existingResult.operatingSystem = operatingSystem;
+
+      if (!existingResult.clickedAt) {
+        existingResult.clickedAt = new Date();
+      }
+
+      if (!existingResult.interactionTime) {
+        existingResult.interactionTime = new Date();
+      }
+
+      if (!existingResult.ipAddress) {
+        existingResult.ipAddress = ipAddress;
+      }
+
+      if (!existingResult.deviceInfo) {
+        existingResult.deviceInfo = deviceInfo;
+      }
+
+      if (!existingResult.operatingSystem) {
+        existingResult.operatingSystem = operatingSystem;
+      }
       await existingResult.save();
     } else {  
    
@@ -47,6 +63,7 @@ router.get("/verify-account", async (req, res) => {
           ipAddress,
           deviceInfo,
           operatingSystem,
+          clickedAt: new Date(),
           interactionTime: new Date(),
         });
     }
@@ -85,7 +102,14 @@ router.get("/track-open", async (req, res) => {
     if (existingResult) {
 
       existingResult.emailOpened = true;
-      existingResult.openedAt = new Date();
+
+      if (!existingResult.emailOpenedAt) {
+        existingResult.emailOpenedAt = new Date();
+      }
+
+      if (!existingResult.interactionTime) {
+        existingResult.interactionTime = new Date();
+      }
 
       await existingResult.save();
 
@@ -95,7 +119,8 @@ router.get("/track-open", async (req, res) => {
         userId: user._id,
         campaignId,
         emailOpened: true,
-        openedAt: new Date()
+        emailOpenedAt: new Date(),
+        interactionTime: new Date()
       });
     }
 

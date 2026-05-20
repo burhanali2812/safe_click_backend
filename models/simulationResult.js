@@ -20,9 +20,15 @@ const interactionSchema = new mongoose.Schema({
     type: Boolean, 
     default: false 
   },
+  emailOpenedAt: { 
+    type: Date 
+  },
   linkClicked: { 
     type: Boolean, 
     default: false 
+  },
+  clickedAt: { 
+    type: Date 
   },
 
 
