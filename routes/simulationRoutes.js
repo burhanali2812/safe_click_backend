@@ -25,32 +25,9 @@ router.get("/verify-account", async (req, res) => {
 
     const deviceInfo = req.headers["user-agent"] || "Unknown Device";
     const operatingSystem = req.headers["sec-ch-ua-platform"] || "Unknown OS";
-
-    // 🚀 respond immediately
-    res.redirect("https://safe-clicks1.vercel.app/phishing-trap");
-
-    // 🔥 run tracking AFTER response
-    setImmediate(async () => {
-      try {
-        let location = "Unknown";
-
-        try {
-          const response = await axios.get(
-            `https://api.ipinfo.io/lite/${ipAddress}?token=${process.env.IPINFO_TOKEN}`,
-            { timeout: 3000 }
-          );
-
-          const data = response.data;
-
-          location = `${data.city || "Unknown"}, ${data.country || "Unknown"}`;
-        } catch (err) {
-          console.log("IP lookup failed:", err.message);
-        }
-
         await SimulationResult.create({
           userId: user._id,
           campaignId,
-          emailOpened: true,
           linkClicked: true,
           ipAddress,
           deviceInfo,
@@ -58,15 +35,70 @@ router.get("/verify-account", async (req, res) => {
           location,
           interactionTime: new Date(),
         });
-
-      } catch (e) {
-        console.error("Tracking error:", e.message);
-      }
-    });
+        
+   
+    res.redirect("https://safe-clicks1.vercel.app/phishing-trap");
 
   } catch (error) {
     console.error(error);
     return res.status(500).send("Server error");
+  }
+});
+
+router.get("/track-open", async (req, res) => {
+  try {
+
+    const { email, campaignId } = req.query;
+
+    if (!email || !campaignId) {
+      return res.end();
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.end();
+    }
+
+    // prevent duplicates
+    const existingResult =
+      await SimulationResult.findOne({
+        userId: user._id,
+        campaignId
+      });
+
+    if (existingResult) {
+
+      existingResult.emailOpened = true;
+      existingResult.openedAt = new Date();
+
+      await existingResult.save();
+
+    } else {
+
+      await SimulationResult.create({
+        userId: user._id,
+        campaignId,
+        emailOpened: true,
+        openedAt: new Date()
+      });
+    }
+
+    // invisible 1x1 transparent gif
+    const pixel = Buffer.from(
+      "R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==",
+      "base64"
+    );
+
+    res.setHeader("Content-Type", "image/gif");
+
+    return res.send(pixel);
+
+  } catch (error) {
+
+    console.error(error);
+
+    return res.end();
   }
 });
 

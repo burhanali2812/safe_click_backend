@@ -55,11 +55,13 @@ const users = await User.find({ _id: { $in: targetedUsers } });
 for (const user of users) {
 
   const link = `https://safe-click-backend.vercel.app/api/simulations/verify-account?email=${encodeURIComponent(user.email)}&campaignId=${newCampaign._id}`;
+  const openTrackingUrl =`https://safe-click-backend.vercel.app/api/simulations/track-open?email=${encodeURIComponent(user.email)}&campaignId=${newCampaign._id}`;
 
    const html = renderTemplate(template.body, {
       email: user.email,
       campaignId: newCampaign._id.toString(),
-      link
+      link,
+      openTrackingUrl,
   });
 
     await transporter.sendMail({
