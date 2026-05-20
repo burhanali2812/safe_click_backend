@@ -8,6 +8,7 @@ const Template = require("../models/emailTemplate");
 const Campaign = require("../models/compaign");
 const authMiddleWare = require("../MiddleWare/authMiddleware");
 const renderTemplate = require("../Utils/renderTemplate");
+const SimulationResult = require("../models/simulationResult");
 const router = express.Router();
 
 const transporter = nodemailer.createTransport({
@@ -143,6 +144,9 @@ router.delete("/campaigns/:id", authMiddleWare, async (req, res) => {
         .status(404)
         .json({ success: false, message: "Campaign not found" });
     }
+    const simulationResults = await SimulationResult.deleteMany({
+      campaignId: req.params.id,
+    });
     res
       .status(200)
       .json({ success: true, message: "Campaign deleted successfully" });
