@@ -126,15 +126,29 @@ const mailOptions = {
 
 
 router.post("/verify-otp", authMiddleWare, async (req, res) => {
+try {
+  const email = req.user?.email;
   const { otp } = req.body;
-
-  const savedOtp = otpMap.get(req.user.email);
-  if (savedOtp === otp) {
-    otpMap.delete(req.user.email);
-    return res.status(200).json({ success: true, message: "OTP verified" });
+  if (!email) {
+    return res.status(400).json({ success: false, message: "Missing email" });
   }
-
-  return res.status(400).json({ success: false, message: error.message || "Invalid OTP" });
+  if (!otp) {
+    return res.status(400).json({ success: false, message: "Missing OTP" });
+  }
+  const storedOTP = otpMap.get(email);
+  if (!storedOTP) {
+    return res.status(400).json({ success: false, message: "OTP expired or not found" });
+  }
+  if (storedOTP !== otp) {
+    return res.status(400).json({ success: false, message: "Invalid OTP" });
+  }
+  otpMap.delete(email);
+  res.status(200).json({ success: true, message: "OTP verified successfully" });
+  
+  
+} catch (error) {
+  res.status(500).json({ success: false, message: error.message || "Failed to verify OTP" });
+}
 });
 
 
