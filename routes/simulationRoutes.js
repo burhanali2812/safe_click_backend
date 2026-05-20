@@ -93,11 +93,11 @@ router.put("/setLocation", async (req, res) => {
 
 router.get("/track-open", async (req, res) => {
   try {
-    const { simulationResultId } = req.query;
+    const { simulationResultId , userId, campaignId} = req.query;
 
     if (!simulationResultId) return res.end();
 
-    const result = await SimulationResult.findById(simulationResultId);
+    const result = await SimulationResult.findOne({ _id: simulationResultId , userId, campaignId});
 
     if (result) {
       result.emailOpened = true;

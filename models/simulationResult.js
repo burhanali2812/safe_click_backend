@@ -59,7 +59,7 @@ const interactionSchema = new mongoose.Schema({
   location: {
     country: String,
     region: String,
-    city: String,
+    area: String,
     coordinates: {
       lat: Number,
       lon: Number

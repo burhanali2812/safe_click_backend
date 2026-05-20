@@ -55,34 +55,36 @@ router.post("/create-campaign", authMiddleWare, async (req, res) => {
 const users = await User.find({ _id: { $in: targetedUsers } });
 
 for (const user of users) {
+
   const sim = await SimulationResult.create({
-  userId: user._id,
-  campaignId: newCampaign._id,
-  emailOpened: false,
-  linkClicked: false
-});
-const link =
-  `https://safe-click-backend.vercel.app/api/simulations/verify-account?simulationResultId=${sim._id}`;
+    userId: user._id,
+    campaignId: newCampaign._id,
+    emailOpened: false,
+    linkClicked: false
+  });
 
-const openTrackingUrl =
-  `https://safe-click-backend.vercel.app/api/simulations/track-open?simulationResultId=${sim._id}`;
+  const id = sim._id.toString();
 
-const html = renderTemplate(template.body, {
-  simulationResultId: sim._id.toString(),
-  link,
-  openTrackingUrl,
-});
+  const link =
+    `https://safe-click-backend.vercel.app/api/simulations/verify-account?simulationResultId=${id}`;
 
-console.log("FINAL LINK:", link);
-console.log("OPEN TRACKING:", openTrackingUrl);
-console.log("HTML:", html);
+  const openTrackingUrl =
+    `https://safe-click-backend.vercel.app/api/simulations/track-open?simulationResultId=${id}&userId=${user._id}&campaignId=${newCampaign._id}`;
 
-    await transporter.sendMail({
-        from: process.env.SMTP_USER,
-        to: user.email,
-        subject: template.subject,
-        html
-    });
+  const html = renderTemplate(template.body, {
+    simulationResultId: id,
+    link,
+    openTrackingUrl,
+  });
+
+  await transporter.sendMail({
+    from: process.env.SMTP_USER,
+    to: user.email,
+    subject: template.subject,
+    html
+  });
+
+  console.log("Created simulation result:", sim._id);
 }
     res
       .status(201)
