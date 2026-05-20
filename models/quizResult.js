@@ -2,6 +2,22 @@ const mongoose = require('mongoose');
 
 const attemptSchema = new mongoose.Schema({
 
+  quizMode: {
+    type: String,
+    enum: ['single', 'mix'],
+    default: 'single'
+  },
+
+  quizTitle: {
+    type: String,
+    trim: true
+  },
+
+  difficultyLevel: {
+    type: String,
+    trim: true
+  },
+
 
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -13,9 +29,14 @@ const attemptSchema = new mongoose.Schema({
   quizId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Quiz',
-    required: true,
+    default: null,
     index: true
   },
+
+  sourceQuizIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Quiz'
+  }],
 
   score: {
     type: Number,
@@ -32,6 +53,24 @@ const attemptSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+
+  totalQuestions: {
+    type: Number,
+    default: 0
+  },
+
+  correctPercentage: {
+    type: Number,
+    default: 0
+  },
+
+  questionsSnapshot: [{
+    questionText: String,
+    userAnswer: String,
+    correctAnswer: String,
+    isCorrect: Boolean,
+    points: { type: Number, default: 1 }
+  }],
 
   completionTime: {
     type: Number 

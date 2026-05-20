@@ -8,18 +8,33 @@ const Admin = require("../models/admin");
 const router = express.Router();
 
 const normalizeDifficulty = (value) => {
-  const normalized = String(value || "").trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   if (normalized === "easy" || normalized === "beginner") return "Beginner";
-  if (normalized === "medium" || normalized === "intermediate") return "Intermediate";
-  if (normalized === "difficult" || normalized === "hard" || normalized === "advanced") return "Advanced";
+  if (normalized === "medium" || normalized === "intermediate")
+    return "Intermediate";
+  if (
+    normalized === "difficult" ||
+    normalized === "hard" ||
+    normalized === "advanced"
+  )
+    return "Advanced";
   return "Beginner";
 };
 
 const toDifficultyKey = (value) => {
-  const normalized = String(value || "").trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   if (normalized === "beginner" || normalized === "easy") return "easy";
   if (normalized === "intermediate" || normalized === "medium") return "medium";
-  if (normalized === "advanced" || normalized === "difficult" || normalized === "hard") return "difficult";
+  if (
+    normalized === "advanced" ||
+    normalized === "difficult" ||
+    normalized === "hard"
+  )
+    return "difficult";
   return "easy";
 };
 
@@ -37,14 +52,16 @@ const validateQuestions = (questions) => {
       return `Question ${index + 1} requires at least 2 options`;
     }
 
-    if (typeof question.correctAnswer !== "string" || !question.correctAnswer.trim()) {
+    if (
+      typeof question.correctAnswer !== "string" ||
+      !question.correctAnswer.trim()
+    ) {
       return `Question ${index + 1} requires correctAnswer`;
     }
   }
 
   return null;
 };
-
 const serializeQuiz = (quiz) => ({
   _id: quiz._id,
   title: quiz.title,
@@ -58,16 +75,33 @@ const serializeQuiz = (quiz) => ({
   updatedAt: quiz.updatedAt,
 });
 
-
 router.post("/create-quiz", authMiddleWare, async (req, res) => {
   try {
     if (req.user.role !== "admin") {
-        return res.status(403).json({ success: false, message: "Access denied" });
-        }
-    const { title, description, questions, difficultyLevel, timeLimit, isPublished } = req.body;
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+    const {
+      title,
+      description,
+      questions,
+      difficultyLevel,
+      timeLimit,
+      isPublished,
+    } = req.body;
 
-    if (!title || !questions || !Array.isArray(questions) || questions.length === 0) {
-        return res.status(400).json({ success: false, message: "Title and questions are required, and questions must be an array with at least one question" });
+    if (
+      !title ||
+      !questions ||
+      !Array.isArray(questions) ||
+      questions.length === 0
+    ) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Title and questions are required, and questions must be an array with at least one question",
+        });
     }
 
     const questionError = validateQuestions(questions);
@@ -76,18 +110,26 @@ router.post("/create-quiz", authMiddleWare, async (req, res) => {
     }
 
     const quiz = new Quiz({
-        title,
-        description,
-        questions,
-        difficultyLevel: normalizeDifficulty(difficultyLevel),
-        timeLimit: Number.isFinite(Number(timeLimit)) ? Number(timeLimit) : 30,
-        isPublished: Boolean(isPublished),
+      title,
+      description,
+      questions,
+      difficultyLevel: normalizeDifficulty(difficultyLevel),
+      timeLimit: Number.isFinite(Number(timeLimit)) ? Number(timeLimit) : 30,
+      isPublished: Boolean(isPublished),
     });
     await quiz.save();
 
-    res.status(201).json({ success: true, message: "Quiz created successfully", quiz: serializeQuiz(quiz) });
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: "Quiz created successfully",
+        quiz: serializeQuiz(quiz),
+      });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -99,11 +141,17 @@ router.post("/bulk-create", authMiddleWare, async (req, res) => {
 
     const quizzes = req.body.quizzes || req.body.items || req.body;
     if (!Array.isArray(quizzes) || quizzes.length === 0) {
-      return res.status(400).json({ success: false, message: "Provide an array of quizzes" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Provide an array of quizzes" });
     }
 
     const normalizedQuizzes = quizzes.map((quiz, index) => {
-      if (!quiz?.title || !Array.isArray(quiz.questions) || quiz.questions.length === 0) {
+      if (
+        !quiz?.title ||
+        !Array.isArray(quiz.questions) ||
+        quiz.questions.length === 0
+      ) {
         throw new Error(`Quiz ${index + 1} requires title and questions`);
       }
 
@@ -117,7 +165,9 @@ router.post("/bulk-create", authMiddleWare, async (req, res) => {
         description: quiz.description || "",
         questions: quiz.questions,
         difficultyLevel: normalizeDifficulty(quiz.difficultyLevel),
-        timeLimit: Number.isFinite(Number(quiz.timeLimit)) ? Number(quiz.timeLimit) : 30,
+        timeLimit: Number.isFinite(Number(quiz.timeLimit))
+          ? Number(quiz.timeLimit)
+          : 30,
         isPublished: Boolean(quiz.isPublished),
       };
     });
@@ -130,16 +180,14 @@ router.post("/bulk-create", authMiddleWare, async (req, res) => {
       quizzes: createdQuizzes.map(serializeQuiz),
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
 router.get("/", authMiddleWare, async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
-      return res.status(403).json({ success: false, message: "Access denied" });
-    }
-
     const { difficultyLevel, search, isPublished } = req.query;
     const query = {};
 
@@ -147,8 +195,12 @@ router.get("/", authMiddleWare, async (req, res) => {
       query.difficultyLevel = normalizeDifficulty(difficultyLevel);
     }
 
-    if (isPublished !== undefined) {
-      query.isPublished = String(isPublished) === "true";
+    if (req.user.role === "admin") {
+      if (isPublished !== undefined) {
+        query.isPublished = String(isPublished) === "true";
+      }
+    } else {
+      query.isPublished = true;
     }
 
     if (search) {
@@ -165,7 +217,9 @@ router.get("/", authMiddleWare, async (req, res) => {
       quizzes: quizzes.map(serializeQuiz),
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -177,12 +231,16 @@ router.get("/:id", authMiddleWare, async (req, res) => {
 
     const quiz = await Quiz.findById(req.params.id).lean();
     if (!quiz) {
-      return res.status(404).json({ success: false, message: "Quiz not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Quiz not found" });
     }
 
     return res.status(200).json({ success: true, quiz: serializeQuiz(quiz) });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -192,7 +250,14 @@ router.put("/:id", authMiddleWare, async (req, res) => {
       return res.status(403).json({ success: false, message: "Access denied" });
     }
 
-    const { title, description, questions, difficultyLevel, timeLimit, isPublished } = req.body;
+    const {
+      title,
+      description,
+      questions,
+      difficultyLevel,
+      timeLimit,
+      isPublished,
+    } = req.body;
     const updates = {};
 
     if (title !== undefined) updates.title = title;
@@ -204,18 +269,35 @@ router.put("/:id", authMiddleWare, async (req, res) => {
       }
       updates.questions = questions;
     }
-    if (difficultyLevel !== undefined) updates.difficultyLevel = normalizeDifficulty(difficultyLevel);
-    if (timeLimit !== undefined) updates.timeLimit = Number.isFinite(Number(timeLimit)) ? Number(timeLimit) : 30;
+    if (difficultyLevel !== undefined)
+      updates.difficultyLevel = normalizeDifficulty(difficultyLevel);
+    if (timeLimit !== undefined)
+      updates.timeLimit = Number.isFinite(Number(timeLimit))
+        ? Number(timeLimit)
+        : 30;
     if (isPublished !== undefined) updates.isPublished = Boolean(isPublished);
 
-    const quiz = await Quiz.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true }).lean();
+    const quiz = await Quiz.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+      runValidators: true,
+    }).lean();
     if (!quiz) {
-      return res.status(404).json({ success: false, message: "Quiz not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Quiz not found" });
     }
 
-    return res.status(200).json({ success: true, message: "Quiz updated successfully", quiz: serializeQuiz(quiz) });
+    return res
+      .status(200)
+      .json({
+        success: true,
+        message: "Quiz updated successfully",
+        quiz: serializeQuiz(quiz),
+      });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -227,59 +309,129 @@ router.delete("/:id", authMiddleWare, async (req, res) => {
 
     const quiz = await Quiz.findByIdAndDelete(req.params.id);
     if (!quiz) {
-      return res.status(404).json({ success: false, message: "Quiz not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Quiz not found" });
     }
 
     await QuizResult.deleteMany({ quizId: req.params.id });
 
-    return res.status(200).json({ success: true, message: "Quiz deleted successfully" });
+    return res
+      .status(200)
+      .json({ success: true, message: "Quiz deleted successfully" });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
 router.post("/submit-quiz", authMiddleWare, async (req, res) => {
   try {
-    const { quizId, answers , startTime } = req.body;
-    if (!quizId || !answers || typeof answers !== "object" || startTime === undefined) {
-        return res.status(400).json({ success: false, message: "quizId and answers are required, and answers must be an object" });
+    const {
+      quizId,
+      quizMode = "single",
+      quizTitle,
+      difficultyLevel,
+      answers,
+      startTime,
+      questions = [],
+      sourceQuizIds = [],
+    } = req.body;
+
+    if (!answers || typeof answers !== "object" || startTime === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Provide quizId or questions, and answers must be an object",
+      });
     }
-    const quiz = await Quiz.findById(quizId);
-    if (!quiz) {
+
+    let quiz = null;
+    let sourceQuestions = [];
+
+    if (quizId) {
+      quiz = await Quiz.findById(quizId);
+      if (!quiz) {
         return res.status(404).json({ success: false, message: "Quiz not found" });
+      }
+      sourceQuestions = quiz.questions || [];
+    } else if (Array.isArray(questions) && questions.length > 0) {
+      sourceQuestions = questions;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Provide quizId or questions to submit the quiz",
+      });
     }
+
     let score = 0;
     let correctAnswerCount = 0;
     let wrongAnswerCount = 0;
-    quiz.questions.forEach((question, index) => {
-        if (answers[index] && answers[index].toString() === question.correctAnswer.toString()) {
-            score++;
-        }
-        if (Array.isArray(answers[index]) && Array.isArray(question.correctAnswer)) {
-            const correctMatches = answers[index].filter(answer => question.correctAnswer.includes(answer)).length;
-            correctAnswerCount += correctMatches;
-        }
-        if (Array.isArray(answers[index]) && Array.isArray(question.correctAnswer)) {
-            const wrongMatches = answers[index].filter(answer => !question.correctAnswer.includes(answer)).length;
-            wrongAnswerCount += wrongMatches;
-        }
+    let maxScore = 0;
+
+    const questionSnapshots = sourceQuestions.map((question, index) => {
+      const expectedAnswer = question.correctAnswer;
+      const userAnswer = answers[index] ?? answers[question.id] ?? answers[question.questionText] ?? "";
+      const isCorrect = String(userAnswer).trim() === String(expectedAnswer).trim();
+      const points = Number(question.points) || 1;
+      maxScore += points;
+
+      if (isCorrect) {
+        score += points;
+        correctAnswerCount += 1;
+      } else {
+        wrongAnswerCount += 1;
+      }
+
+      return {
+        questionText: question.questionText,
+        userAnswer: String(userAnswer),
+        correctAnswer: String(expectedAnswer),
+        isCorrect,
+        points,
+      };
     });
 
-    const timeTaken = Date.now() - startTime;
+    const timeTaken = Date.now() - Number(startTime);
+    const totalQuestions = questionSnapshots.length;
+    const correctPercentage = totalQuestions
+      ? Math.round((correctAnswerCount / totalQuestions) * 100)
+      : 0;
 
     const quizResult = new QuizResult({
-        userId: req.user.id,
-        quizId,
+      userId: req.user.id,
+      quizId: quizId || null,
+      quizMode,
+      quizTitle: quizTitle || quiz?.title || "Quiz Attempt",
+      difficultyLevel: difficultyLevel || quiz?.difficultyLevel || "",
+      sourceQuizIds: Array.isArray(sourceQuizIds) ? sourceQuizIds.filter(Boolean) : [],
+      score,
+      correctAnswers: correctAnswerCount,
+      wrongAnswers: wrongAnswerCount,
+      totalQuestions,
+      correctPercentage,
+      questionsSnapshot: questionSnapshots,
+      completionTime: timeTaken,
+    });
+
+    await quizResult.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Quiz submitted successfully",
+      quizResult,
+      summary: {
         score,
         correctAnswers: correctAnswerCount,
         wrongAnswers: wrongAnswerCount,
+        totalQuestions,
+        correctPercentage,
         completionTime: timeTaken,
+        maxScore,
+      },
     });
-    await quizResult.save();
-
-    res.status(200).json({ success: true, message: "Quiz submitted successfully", quizResult });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    return res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 });
 
