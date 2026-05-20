@@ -78,35 +78,102 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Email and password are required" });
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
     }
+
+    // 🔵 CHECK ADMIN FIRST
     const admin = await Admin.findOne({ email });
-    if (!admin) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid email or password" });
+
+    if (admin) {
+      const isMatch = await bcrypt.compare(password, admin.password);
+
+      if (!isMatch) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid email or password",
+        });
+      }
+
+      const token = jwt.sign(
+        { id: admin._id, email: admin.email, role: "admin" },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Admin logged in successfully",
+        token,
+        role: "admin",
+      });
     }
-    const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid email or password" });
+
+    // 🟢 CHECK USER
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
     }
+
+    if (user.accountStatus === "pending") {
+      return res.status(403).json({
+        success: false,
+        message: "Account does not exist!",
+      });
+    }
+
+    if (
+      user.accountStatus === "blocked" ||
+      user.accountStatus === "suspended"
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: `Account is ${user.accountStatus}`,
+      });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      user.failedLoginAttempts += 1;
+      await user.save();
+
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
+    user.failedLoginAttempts = 0;
+    user.lastLogin = new Date();
+    await user.save();
+
     const token = jwt.sign(
-      { id: admin._id, email: admin.email, role: "admin" },
+      { id: user._id, email: user.email, role: "user" },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" },
+      { expiresIn: "7d" }
     );
-    res
-      .status(200)
-      .json({ success: true, message: "Admin logged in successfully", token });
+
+    return res.status(200).json({
+      success: true,
+      message: "User logged in successfully",
+      token,
+      role: "user",
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
   }
 });
 

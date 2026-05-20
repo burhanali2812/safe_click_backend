@@ -2,6 +2,8 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
+const SimulationResult = require("../models/simulationResult");
+const QuizResult = require("../models/quizResult");
 const authMiddleWare = require("../MiddleWare/authMiddleware");
 
 const router = express.Router();
@@ -64,92 +66,92 @@ router.post("/register", async (req, res) => {
 });
 
 // Login user
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+// router.post("/login", async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
 
-    // Validation
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide email and password",
-      });
-    }
+//     // Validation
+//     if (!email || !password) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Please provide email and password",
+//       });
+//     }
 
-    // Find user by email
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
-    }
-    if(user.accountStatus === "pending"){
-      return res.status(403).json({
-        success: false,
-        message: "Account does not exists!",
-      });
-    }
+//     // Find user by email
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "Invalid email or password",
+//       });
+//     }
+//     if(user.accountStatus === "pending"){
+//       return res.status(403).json({
+//         success: false,
+//         message: "Account does not exists!",
+//       });
+//     }
 
-    // Check account status
-    if (
-      user.accountStatus === "blocked" ||
-      user.accountStatus === "suspended"
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: `Account is ${user.accountStatus}`,
-      });
-    }
+//     // Check account status
+//     if (
+//       user.accountStatus === "blocked" ||
+//       user.accountStatus === "suspended"
+//     ) {
+//       return res.status(403).json({
+//         success: false,
+//         message: `Account is ${user.accountStatus}`,
+//       });
+//     }
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      // Increment failed login attempts
-      user.failedLoginAttempts += 1;
-      await user.save();
+//     // Verify password
+//     const isPasswordValid = await bcrypt.compare(password, user.password);
+//     if (!isPasswordValid) {
+//       // Increment failed login attempts
+//       user.failedLoginAttempts += 1;
+//       await user.save();
 
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
-    }
+//       return res.status(401).json({
+//         success: false,
+//         message: "Invalid email or password",
+//       });
+//     }
 
-    // Reset failed login attempts on successful login
-    user.failedLoginAttempts = 0;
-    user.lastLogin = new Date();
-    await user.save();
+//     // Reset failed login attempts on successful login
+//     user.failedLoginAttempts = 0;
+//     user.lastLogin = new Date();
+//     await user.save();
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id, email: user.email, role: user.role, name: user.name },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" },
-    );
+//     // Generate JWT token
+//     const token = jwt.sign(
+//       { id: user._id, email: user.email, role: user.role, name: user.name },
+//       process.env.JWT_SECRET,
+//       { expiresIn: "7d" },
+//     );
 
-    res.status(200).json({
-      success: true,
-      message: "User logged in successfully",
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        securityScore: user.securityScore,
-        riskLevel: user.riskLevel,
-        accountStatus: user.accountStatus,
-        lastLogin: user.lastLogin,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error logging in",
-      error: error.message,
-    });
-  }
-});
+//     res.status(200).json({
+//       success: true,
+//       message: "User logged in successfully",
+//       token,
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//         role: user.role,
+//         securityScore: user.securityScore,
+//         riskLevel: user.riskLevel,
+//         accountStatus: user.accountStatus,
+//         lastLogin: user.lastLogin,
+//       },
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Error logging in",
+//       error: error.message,
+//     });
+//   }
+// });
 
 // Get current user profile
 router.get("/profile", authMiddleWare, async (req, res) => {
@@ -171,6 +173,83 @@ router.get("/profile", authMiddleWare, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching profile",
+      error: error.message,
+    });
+  }
+});
+
+// Get current user dashboard summary
+router.get("/dashboard-summary", authMiddleWare, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const [emailOpenedCount, linkClickedCount, quizStats, latestAttempts] = await Promise.all([
+      SimulationResult.countDocuments({ userId: req.user.id, emailOpened: true }),
+      SimulationResult.countDocuments({ userId: req.user.id, linkClicked: true }),
+      QuizResult.aggregate([
+        { $match: { userId: user._id } },
+        {
+          $group: {
+            _id: null,
+            totalQuizConduct: { $sum: 1 },
+            totalCorrect: { $sum: "$correctAnswers" },
+            totalWrong: { $sum: "$wrongAnswers" },
+            totalQuestionsSolved: { $sum: "$totalQuestions" },
+            avgSolvingTime: { $avg: "$completionTime" },
+            avgQuizPoints: { $avg: "$score" },
+          },
+        },
+      ]),
+      QuizResult.find({ userId: req.user.id })
+        .sort({ attemptDate: -1, createdAt: -1 })
+        .limit(5)
+        .select("quizTitle quizMode score correctAnswers wrongAnswers totalQuestions completionTime correctPercentage attemptDate"),
+    ]);
+
+    const stats = quizStats?.[0] || {
+      totalQuizConduct: 0,
+      totalCorrect: 0,
+      totalWrong: 0,
+      totalQuestionsSolved: 0,
+      avgSolvingTime: 0,
+      avgQuizPoints: 0,
+    };
+
+    const totalQuizConduct = stats.totalQuizConduct || 0;
+    const avgSolvingTime = stats.avgSolvingTime || 0;
+    const avgQuizPoints = stats.avgQuizPoints || 0;
+    const securityScore = Number(user.securityScore) || 0;
+
+    res.status(200).json({
+      success: true,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        securityScore,
+        riskLevel: user.riskLevel,
+        totalLinksClicked: Number(linkClickedCount) || 0,
+        totalEmailsOpened: Number(emailOpenedCount) || 0,
+        totalQuizConduct,
+        totalCorrect: Number(stats.totalCorrect) || 0,
+        totalWrong: Number(stats.totalWrong) || 0,
+        totalQuestionsSolved: Number(stats.totalQuestionsSolved) || 0,
+        avgSolvingTime,
+        avgQuizPoints,
+      },
+      recentAttempts: latestAttempts,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching dashboard summary",
       error: error.message,
     });
   }
