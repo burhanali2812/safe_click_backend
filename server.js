@@ -12,6 +12,7 @@ const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const emailTemplateRoutes = require("./routes/emailRoutes");
 const campaignRoutes = require("./routes/campaignRoutes");
+const quizRoutes = require("./routes/quizRoutes");
 const simulationRoutes = require("./routes/simulationRoutes");
 
 const PORT = process.env.PORT || 5000;
@@ -27,6 +28,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/email-templates", emailTemplateRoutes);
 app.use("/api/campaigns", campaignRoutes);
+app.use("/api/quizzes", quizRoutes);
 app.use("/api/simulations", simulationRoutes);
 const connectDB = async () => {
   try {
