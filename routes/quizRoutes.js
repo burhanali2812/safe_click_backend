@@ -95,13 +95,11 @@ router.post("/create-quiz", authMiddleWare, async (req, res) => {
       !Array.isArray(questions) ||
       questions.length === 0
     ) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message:
-            "Title and questions are required, and questions must be an array with at least one question",
-        });
+      return res.status(400).json({
+        success: false,
+        message:
+          "Title and questions are required, and questions must be an array with at least one question",
+      });
     }
 
     const questionError = validateQuestions(questions);
@@ -119,13 +117,11 @@ router.post("/create-quiz", authMiddleWare, async (req, res) => {
     });
     await quiz.save();
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Quiz created successfully",
-        quiz: serializeQuiz(quiz),
-      });
+    res.status(201).json({
+      success: true,
+      message: "Quiz created successfully",
+      quiz: serializeQuiz(quiz),
+    });
   } catch (error) {
     res
       .status(500)
@@ -287,13 +283,11 @@ router.put("/:id", authMiddleWare, async (req, res) => {
         .json({ success: false, message: "Quiz not found" });
     }
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "Quiz updated successfully",
-        quiz: serializeQuiz(quiz),
-      });
+    return res.status(200).json({
+      success: true,
+      message: "Quiz updated successfully",
+      quiz: serializeQuiz(quiz),
+    });
   } catch (error) {
     return res
       .status(500)
@@ -352,7 +346,9 @@ router.post("/submit-quiz", authMiddleWare, async (req, res) => {
     if (quizId) {
       quiz = await Quiz.findById(quizId);
       if (!quiz) {
-        return res.status(404).json({ success: false, message: "Quiz not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Quiz not found" });
       }
       sourceQuestions = quiz.questions || [];
     } else if (Array.isArray(questions) && questions.length > 0) {
@@ -371,8 +367,13 @@ router.post("/submit-quiz", authMiddleWare, async (req, res) => {
 
     const questionSnapshots = sourceQuestions.map((question, index) => {
       const expectedAnswer = question.correctAnswer;
-      const userAnswer = answers[index] ?? answers[question.id] ?? answers[question.questionText] ?? "";
-      const isCorrect = String(userAnswer).trim() === String(expectedAnswer).trim();
+      const userAnswer =
+        answers[index] ??
+        answers[question.id] ??
+        answers[question.questionText] ??
+        "";
+      const isCorrect =
+        String(userAnswer).trim() === String(expectedAnswer).trim();
       const points = Number(question.points) || 1;
       maxScore += points;
 
@@ -404,7 +405,9 @@ router.post("/submit-quiz", authMiddleWare, async (req, res) => {
       quizMode,
       quizTitle: quizTitle || quiz?.title || "Quiz Attempt",
       difficultyLevel: difficultyLevel || quiz?.difficultyLevel || "",
-      sourceQuizIds: Array.isArray(sourceQuizIds) ? sourceQuizIds.filter(Boolean) : [],
+      sourceQuizIds: Array.isArray(sourceQuizIds)
+        ? sourceQuizIds.filter(Boolean)
+        : [],
       score,
       correctAnswers: correctAnswerCount,
       wrongAnswers: wrongAnswerCount,
@@ -431,7 +434,9 @@ router.post("/submit-quiz", authMiddleWare, async (req, res) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 

@@ -41,6 +41,24 @@ router.get("/verify-account", async (req, res) => {
       result.deviceType = deviceType;
 
       await result.save();
+      const user = await User.findById(result.userId);
+      if (user) {
+        user.securityScore = Math.max(
+          0,
+          user.securityScore - 10
+        );
+        user.totalLinksClicked = (user.totalLinksClicked || 0) + 1;
+        if (user.securityScore < 50) {
+          user.riskLevel = "high";
+        }
+        if (user.securityScore >= 50 && user.securityScore < 80) {
+          user.riskLevel = "medium";
+        }
+        if (user.securityScore >= 80) {
+          user.riskLevel = "low";
+        }
+        await user.save();
+      }
     }
 
  res.redirect(
@@ -105,6 +123,15 @@ router.get("/track-open", async (req, res) => {
       result.interactionTime ||= new Date();
 
       await result.save();
+      const user = await User.findById(result.userId);
+      if (user) {
+        user.securityScore = Math.max(
+          0,
+          user.securityScore - 5
+        );
+        user.totalEmailsOpened = (user.totalEmailsOpened || 0) + 1;
+        await user.save();
+      }
     }
 
     const pixel = Buffer.from(

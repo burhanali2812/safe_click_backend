@@ -30,6 +30,15 @@ const userSchema = new mongoose.Schema(
         type: Number,
         default: 100
     },
+    totalLinksClicked: {
+        type: Number,
+        default: 0
+    },
+
+    totalEmailsOpened: {
+        type: Number,
+        default: 0
+    },
 
     riskLevel: {
         type: String,
