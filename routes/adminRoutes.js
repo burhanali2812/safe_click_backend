@@ -34,7 +34,7 @@ const formatSimulationResult = (row) => {
     location: {
       country: location.country || "-",
       region: location.region || "-",
-      city: location.city || "-",
+      area: location.area || "-",
       coordinates: {
         lat: coordinates.lat ?? null,
         lon: coordinates.lon ?? null,
