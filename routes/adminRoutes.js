@@ -13,6 +13,8 @@ const router = express.Router();
 
 const formatSimulationResult = (row) => {
   const user = row.userId && typeof row.userId === "object" ? row.userId : null;
+  const location = row.location || {};
+  const coordinates = location.coordinates || {};
 
   return {
     id: row._id,
@@ -27,6 +29,17 @@ const formatSimulationResult = (row) => {
     ipAddress: row.ipAddress || "-",
     deviceInfo: row.deviceInfo || "-",
     operatingSystem: row.operatingSystem || "-",
+    deviceType: row.deviceType || "Unknown",
+    browser: row.browser || "-",
+    location: {
+      country: location.country || "-",
+      region: location.region || "-",
+      city: location.city || "-",
+      coordinates: {
+        lat: coordinates.lat ?? null,
+        lon: coordinates.lon ?? null,
+      },
+    },
     createdAt: row.createdAt || null,
     updatedAt: row.updatedAt || null,
   };
@@ -37,12 +50,10 @@ router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Name, email, and password are required",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Name, email, and password are required",
+      });
     }
     const existingAdmin = await Admin.findOne({ email });
     if (existingAdmin) {
@@ -166,6 +177,14 @@ router.get(
           ipAddress: latestResult?.ipAddress || "-",
           deviceInfo: latestResult?.deviceInfo || "-",
           operatingSystem: latestResult?.operatingSystem || "-",
+          deviceType: latestResult?.deviceType || "Unknown",
+          browser: latestResult?.browser || "-",
+          location: latestResult?.location || {
+            country: "-",
+            region: "-",
+            city: "-",
+            coordinates: { lat: null, lon: null },
+          },
         };
       });
 
@@ -177,6 +196,24 @@ router.get(
       ).length;
       const engagedUsers = results.filter(
         (row) => row.emailOpened || row.linkClicked,
+      ).length;
+      const desktopUsers = results.filter(
+        (row) => row.deviceType === "Desktop",
+      ).length;
+      const mobileUsers = results.filter(
+        (row) => row.deviceType === "Mobile",
+      ).length;
+      const tabletUsers = results.filter(
+        (row) => row.deviceType === "Tablet",
+      ).length;
+      const unknownDeviceUsers = results.filter(
+        (row) => row.deviceType === "Unknown",
+      ).length;
+      const resultsWithBrowser = results.filter(
+        (row) => row.browser && row.browser !== "-",
+      ).length;
+      const resultsWithLocation = results.filter(
+        (row) => row.location && row.location.city && row.location.city !== "-",
       ).length;
 
       const openRate = totalTargetUsers
@@ -197,6 +234,12 @@ router.get(
             totalLinkClicked,
             pendingUsers,
             engagedUsers,
+            desktopUsers,
+            mobileUsers,
+            tabletUsers,
+            unknownDeviceUsers,
+            resultsWithBrowser,
+            resultsWithLocation,
             openRate,
             clickRate,
           },
