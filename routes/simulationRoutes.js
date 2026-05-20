@@ -25,6 +25,21 @@ router.get("/verify-account", async (req, res) => {
 
     const deviceInfo = req.headers["user-agent"] || "Unknown Device";
     const operatingSystem = req.headers["sec-ch-ua-platform"] || "Unknown OS";
+
+    const existingResult = await SimulationResult.findOne({
+      userId: user._id,
+      campaignId,
+      emailOpened: true,
+    });
+    if (existingResult) {
+      existingResult.linkClicked = true;
+      existingResult.clickedAt = new Date();
+      existingResult.ipAddress = ipAddress;
+      existingResult.deviceInfo = deviceInfo;
+      existingResult.operatingSystem = operatingSystem;
+      await existingResult.save();
+    } else {  
+   
         await SimulationResult.create({
           userId: user._id,
           campaignId,
@@ -32,9 +47,9 @@ router.get("/verify-account", async (req, res) => {
           ipAddress,
           deviceInfo,
           operatingSystem,
-          location,
           interactionTime: new Date(),
         });
+    }
         
    
     res.redirect("https://safe-clicks1.vercel.app/phishing-trap");
