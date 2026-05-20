@@ -73,6 +73,10 @@ const html = renderTemplate(template.body, {
   openTrackingUrl,
 });
 
+console.log("FINAL LINK:", link);
+console.log("OPEN TRACKING:", openTrackingUrl);
+console.log("HTML:", html);
+
     await transporter.sendMail({
         from: process.env.SMTP_USER,
         to: user.email,
