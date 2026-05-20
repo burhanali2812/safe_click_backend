@@ -48,8 +48,23 @@ const interactionSchema = new mongoose.Schema({
   operatingSystem: { 
     type: String 
   },
-
-
+  deviceType: {
+    type: String,
+    enum: ['Desktop', 'Mobile', 'Tablet', 'Unknown'],
+    default: 'Unknown'
+  },
+  browser: {
+    type: String
+  },
+  location: {
+    country: String,
+    region: String,
+    city: String,
+    coordinates: {
+      lat: Number,
+      lon: Number
+    }
+  }
 }, { 
   timestamps: { createdAt: true, updatedAt: false } // No need for updatedAt in an immutable log
 });

@@ -47,22 +47,30 @@ router.post("/create-campaign", authMiddleWare, async (req, res) => {
       targetUsers: targetedUsers,
     });
     await newCampaign.save();
+    
     // send emails to targeted users using the email template (this can be done asynchronously in a real application)
     const template = await Template.findById(emailTemplateId);
    
 const users = await User.find({ _id: { $in: targetedUsers } });
 
 for (const user of users) {
+  const sim = await SimulationResult.create({
+  userId: user._id,
+  campaignId: newCampaign._id,
+  emailOpened: false,
+  linkClicked: false
+});
+const link =
+  `https://safe-click-backend.vercel.app/api/simulations/verify-account?simulationResultId=${sim._id}`;
 
-  const link = `https://safe-click-backend.vercel.app/api/simulations/verify-account?email=${encodeURIComponent(user.email)}&campaignId=${newCampaign._id}`;
-  const openTrackingUrl =`https://safe-click-backend.vercel.app/api/simulations/track-open?email=${encodeURIComponent(user.email)}&campaignId=${newCampaign._id}`;
+const openTrackingUrl =
+  `https://safe-click-backend.vercel.app/api/simulations/track-open?simulationResultId=${sim._id}`;
 
-   const html = renderTemplate(template.body, {
-      email: user.email,
-      campaignId: newCampaign._id.toString(),
-      link,
-      openTrackingUrl,
-  });
+const html = renderTemplate(template.body, {
+  simulationResultId: sim._id.toString(),
+  link,
+  openTrackingUrl,
+});
 
     await transporter.sendMail({
         from: process.env.SMTP_USER,
