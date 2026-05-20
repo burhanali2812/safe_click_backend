@@ -31,6 +31,8 @@ function generateOTP() {
 router.post("/send-otp", authMiddleWare, async (req, res) => {
    const email = req.user?.email;
    const role = req.user?.role;
+   console.log("emailTest: ", email)
+    console.log("roleTest: ", role)
 
   if (!email) {
     return res.status(400).json({ success: false, message: "Missing email" });
@@ -58,6 +60,7 @@ router.post("/send-otp", authMiddleWare, async (req, res) => {
  
 
   const otp = generateOTP();
+  console.log("OTP", otp)
   otpMap.set(email, otp);
   setTimeout(() => otpMap.delete(email), 60000);
 
