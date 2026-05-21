@@ -6,7 +6,6 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 
-const mongoSanitize = require("express-mongo-sanitize");
 
 
 
@@ -22,7 +21,6 @@ app.use(cors());
 app.use(express.json());
 app.use(helmet());
 app.use(morgan("dev"));
-app.use(mongoSanitize());
 app.use(limiter);
 
 // Import routes
