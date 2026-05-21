@@ -89,7 +89,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // 🔵 CHECK ADMIN FIRST
+   
     const admin = await Admin.findOne({ email });
 
     if (admin) {
