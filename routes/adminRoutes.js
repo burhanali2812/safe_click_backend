@@ -11,6 +11,8 @@ const authMiddleWare = require("../MiddleWare/authMiddleware");
 
 const router = express.Router();
 
+const roundNumber = (value) => Number(Number(value || 0).toFixed(1));
+
 const formatSimulationResult = (row) => {
   const user = row.userId && typeof row.userId === "object" ? row.userId : null;
   const location = row.location || {};
@@ -172,6 +174,137 @@ router.post("/login", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
+      error: error.message,
+    });
+  }
+});
+
+router.get("/summary", authMiddleWare, async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
+    const [userSummary, totalEmailTemplates, activeEmailTemplates, totalCampaignRuns, totalQuizzes, totalQuizAttempts, uniqueQuizSolvers, recentUsers, recentCampaigns, recentQuizzes, recentTemplates, recentQuizAttempts] = await Promise.all([
+      User.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalUsers: { $sum: 1 },
+            activeUsers: {
+              $sum: { $cond: [{ $eq: ["$accountStatus", "active"] }, 1, 0] },
+            },
+            pendingUsers: {
+              $sum: { $cond: [{ $eq: ["$accountStatus", "pending"] }, 1, 0] },
+            },
+            suspendedUsers: {
+              $sum: { $cond: [{ $eq: ["$accountStatus", "suspended"] }, 1, 0] },
+            },
+            blockedUsers: {
+              $sum: { $cond: [{ $eq: ["$accountStatus", "blocked"] }, 1, 0] },
+            },
+            lowRiskUsers: {
+              $sum: { $cond: [{ $eq: ["$riskLevel", "low"] }, 1, 0] },
+            },
+            mediumRiskUsers: {
+              $sum: { $cond: [{ $eq: ["$riskLevel", "medium"] }, 1, 0] },
+            },
+            highRiskUsers: {
+              $sum: { $cond: [{ $eq: ["$riskLevel", "high"] }, 1, 0] },
+            },
+            averageSecurityScore: {
+              $avg: { $ifNull: ["$securityScore", 0] },
+            },
+          },
+        },
+      ]),
+      Template.countDocuments(),
+      Template.countDocuments({ isActive: true }),
+      Campaign.countDocuments(),
+      Quiz.countDocuments(),
+      QuizResult.countDocuments(),
+      QuizResult.distinct("userId"),
+      User.find()
+        .select("name email role accountStatus riskLevel securityScore createdAt")
+        .sort({ createdAt: -1 })
+        .limit(8)
+        .lean(),
+      Campaign.find()
+        .populate("emailTemplateId", "templateName")
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .lean(),
+      Quiz.find().sort({ createdAt: -1 }).limit(6).lean(),
+      Template.find().sort({ createdAt: -1 }).limit(6).lean(),
+      QuizResult.find()
+        .populate("userId", "name email")
+        .sort({ createdAt: -1 })
+        .limit(8)
+        .select(
+          "quizTitle quizMode score correctAnswers wrongAnswers totalQuestions correctPercentage completionTime createdAt attemptDate userId",
+        )
+        .lean(),
+    ]);
+
+    const summary = userSummary?.[0] || {
+      totalUsers: 0,
+      activeUsers: 0,
+      pendingUsers: 0,
+      suspendedUsers: 0,
+      blockedUsers: 0,
+      lowRiskUsers: 0,
+      mediumRiskUsers: 0,
+      highRiskUsers: 0,
+      averageSecurityScore: 0,
+    };
+
+    const averageSecurityScore = roundNumber(summary.averageSecurityScore);
+    const averageRiskScore = roundNumber(100 - averageSecurityScore);
+
+    const recentCampaignRows = recentCampaigns.map((campaign) => ({
+      id: campaign._id,
+      title: campaign.title,
+      description: campaign.description || "",
+      templateName: campaign.emailTemplateId?.templateName || "-",
+      targetUsers: Array.isArray(campaign.targetUsers)
+        ? campaign.targetUsers.length
+        : 0,
+      launchDate: campaign.launchDate || campaign.createdAt || null,
+      createdAt: campaign.createdAt || null,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        summary: {
+          totalUsers: summary.totalUsers || 0,
+          activeUsers: summary.activeUsers || 0,
+          pendingUsers: summary.pendingUsers || 0,
+          suspendedUsers: summary.suspendedUsers || 0,
+          blockedUsers: summary.blockedUsers || 0,
+          totalEmailTemplates: totalEmailTemplates || 0,
+          activeEmailTemplates: activeEmailTemplates || 0,
+          totalCampaignRuns: totalCampaignRuns || 0,
+          totalQuizzes: totalQuizzes || 0,
+          totalQuizAttempts: totalQuizAttempts || 0,
+          uniqueQuizSolvers: uniqueQuizSolvers.length || 0,
+          lowRiskUsers: summary.lowRiskUsers || 0,
+          mediumRiskUsers: summary.mediumRiskUsers || 0,
+          highRiskUsers: summary.highRiskUsers || 0,
+          averageSecurityScore,
+          averageRiskScore,
+        },
+        recentUsers,
+        recentCampaigns: recentCampaignRows,
+        recentQuizzes,
+        recentTemplates,
+        recentQuizAttempts,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching admin summary",
       error: error.message,
     });
   }
