@@ -2,10 +2,27 @@ const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const helmet = require("helmet");
+const morgan = require("morgan");
+const xss = require("xss-clean");
+const rateLimit = require("express-rate-limit");
+
+
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100
+});
+
+
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(helmet());
+app.use(morgan("dev"));
+app.use(xss());
+app.use(limiter);
 
 // Import routes
 const userRoutes = require("./routes/userRoutes");
