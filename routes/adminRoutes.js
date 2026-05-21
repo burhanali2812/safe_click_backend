@@ -6,6 +6,7 @@ const Quiz = require("../models/quiz");
 const QuizResult = require("../models/quizResult");
 const Campaign = require("../models/compaign");
 const SimulationResult = require("../models/simulationResult");
+const Template = require("../models/emailTemplate");
 const Admin = require("../models/admin");
 const authMiddleWare = require("../MiddleWare/authMiddleware");
 
