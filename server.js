@@ -2,9 +2,7 @@ const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const helmet = require("helmet");
-const morgan = require("morgan");
-const rateLimit = require("express-rate-limit");
+
 
 
 
@@ -19,9 +17,7 @@ const limiter = rateLimit({
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(helmet());
-app.use(morgan("dev"));
-app.use(limiter);
+
 
 // Import routes
 const userRoutes = require("./routes/userRoutes");
