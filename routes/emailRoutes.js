@@ -54,7 +54,8 @@ router.post("/send-otp", authMiddleWare, async (req, res) => {
   const name = existingUser.name || "User";
 
   const otp = generateOTP();
-
+  console.log("OTP", otp);
+  existingUser.otpCode = otp;
   existingUser.otpExpiresAt = new Date(Date.now() + 60000);
   await existingUser.save();
 
