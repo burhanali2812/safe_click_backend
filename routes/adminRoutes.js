@@ -89,7 +89,6 @@ router.post("/login", async (req, res) => {
       });
     }
 
-   
     const admin = await Admin.findOne({ email });
 
     if (admin) {
@@ -105,7 +104,7 @@ router.post("/login", async (req, res) => {
       const token = jwt.sign(
         { id: admin._id, email: admin.email, role: "admin" },
         process.env.JWT_SECRET,
-        { expiresIn: "7d" }
+        { expiresIn: "7d" },
       );
 
       return res.status(200).json({
@@ -116,13 +115,21 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // 🟢 CHECK USER
+
     const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
+      });
+    }
+    if(user.failedLoginAttempts > 3){
+      user.accountStatus = "blocked";
+      await user.save();
+        return res.status(400).json({
+        success: false,
+        message: "Account is blocked!",
       });
     }
 
@@ -162,7 +169,7 @@ router.post("/login", async (req, res) => {
     const token = jwt.sign(
       { id: user._id, email: user.email, role: "user" },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     return res.status(200).json({
@@ -186,7 +193,20 @@ router.get("/summary", authMiddleWare, async (req, res) => {
       return res.status(403).json({ success: false, message: "Access denied" });
     }
 
-    const [userSummary, totalEmailTemplates, activeEmailTemplates, totalCampaignRuns, totalQuizzes, totalQuizAttempts, uniqueQuizSolvers, recentUsers, recentCampaigns, recentQuizzes, recentTemplates, recentQuizAttempts] = await Promise.all([
+    const [
+      userSummary,
+      totalEmailTemplates,
+      activeEmailTemplates,
+      totalCampaignRuns,
+      totalQuizzes,
+      totalQuizAttempts,
+      uniqueQuizSolvers,
+      recentUsers,
+      recentCampaigns,
+      recentQuizzes,
+      recentTemplates,
+      recentQuizAttempts,
+    ] = await Promise.all([
       User.aggregate([
         {
           $group: {
@@ -226,7 +246,9 @@ router.get("/summary", authMiddleWare, async (req, res) => {
       QuizResult.countDocuments(),
       QuizResult.distinct("userId"),
       User.find()
-        .select("name email role accountStatus riskLevel securityScore createdAt")
+        .select(
+          "name email role accountStatus riskLevel securityScore createdAt",
+        )
         .sort({ createdAt: -1 })
         .limit(8)
         .lean(),
